@@ -1,11 +1,13 @@
 import { Hono } from "hono";
 import jwt from "jsonwebtoken";
-import { hash, compare } from "bcryptjs";
+import bcrypt from "bcryptjs";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { registerSchema, loginSchema } from "../types/schemas.js";
 import { JWT_SECRET } from "../middleware/auth.js";
+
+const { hash, compare } = bcrypt;
 
 const auth = new Hono();
 
