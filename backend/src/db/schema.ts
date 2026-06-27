@@ -55,10 +55,25 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   tasks: many(tasks),
 }));
 
-export const tasksRelations = relations(tasks, ({ one }) => ({
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
   user: one(users, { fields: [tasks.userId], references: [users.id] }),
   category: one(categories, {
     fields: [tasks.categoryId],
     references: [categories.id],
   }),
+  worknotes: many(worknotes),
+}));
+
+// ── Worknotes / Activities ──
+export const worknotes = pgTable("worknotes", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id")
+    .notNull()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const worknotesRelations = relations(worknotes, ({ one }) => ({
+  task: one(tasks, { fields: [worknotes.taskId], references: [tasks.id] }),
 }));

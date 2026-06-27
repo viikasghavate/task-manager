@@ -48,6 +48,13 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface Worknote {
+  id: number;
+  taskId: number;
+  content: string;
+  createdAt: string;
+}
+
 export const tasks = {
   list: (params?: Record<string, string>) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -57,6 +64,9 @@ export const tasks = {
   create: (data: Partial<Task>) => request<{ task: Task }>('/tasks', { method: 'POST', body: data }),
   update: (id: number, data: Partial<Task>) => request<{ task: Task }>(`/tasks/${id}`, { method: 'PATCH', body: data }),
   delete: (id: number) => request<{ success: boolean }>(`/tasks/${id}`, { method: 'DELETE' }),
+  getWorknotes: (taskId: number) => request<{ worknotes: Worknote[] }>(`/tasks/${taskId}/worknotes`),
+  postWorknote: (taskId: number, content: string) =>
+    request<{ worknote: Worknote }>(`/tasks/${taskId}/worknotes`, { method: 'POST', body: { content } }),
 };
 
 // ── Categories ──

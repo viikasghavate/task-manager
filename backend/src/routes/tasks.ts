@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { db } from "../db/index.js";
-import { tasks, categories } from "../db/schema.js";
+import { tasks, categories, worknotes } from "../db/schema.js";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { createTaskSchema, updateTaskSchema } from "../types/schemas.js";
 import { authMiddleware } from "../middleware/auth.js";
@@ -122,6 +122,57 @@ taskRoutes.patch("/:id", async (c) => {
 });
 
 // DELETE /tasks/:id
+// GET /tasks/:id/worknotes — list worknotes for a task
+taskRoutes.get("/:id/worknotes", async (c) => {
+  const { userId } = c.get("user");
+  const id = Number(c.req.param("id"));
+
+  // Verify task ownership
+  const [task] = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+    .limit(1);
+  if (!task) return c.json({ error: "Task not found" }, 404);
+
+  const result = await db
+    .select()
+    .from(worknotes)
+    .where(eq(worknotes.taskId, id))
+    .orderBy(desc(worknotes.createdAt));
+
+  return c.json({ worknotes: result });
+});
+
+// POST /tasks/:id/worknotes — add a worknote to a task
+taskRoutes.post("/:id/worknotes", async (c) => {
+  const { userId } = c.get("user");
+  const id = Number(c.req.param("id"));
+  const { content } = await c.req.json();
+
+  if (!content || typeof content !== "string" || !content.trim()) {
+    return c.json({ error: "Content is required" }, 400);
+  }
+
+  // Verify task ownership
+  const [task] = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+    .limit(1);
+  if (!task) return c.json({ error: "Task not found" }, 404);
+
+  const [note] = await db
+    .insert(worknotes)
+    .values({
+      taskId: id,
+      content: content.trim(),
+    })
+    .returning();
+
+  return c.json({ worknote: note }, 201);
+});
+
 taskRoutes.delete("/:id", async (c) => {
   const { userId } = c.get("user");
   const id = Number(c.req.param("id"));
