@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { tasks as tasksApi, categories as categoriesApi, type Task, type Category, type Worknote } from '../api/client';
+import { tasks as tasksApi, categories as categoriesApi, auth as authApi, type Task, type Category, type Worknote } from '../api/client';
 
 // ── Theme (exact colors from reference image) ──
 // bg-main: #0B0F14  |  bg-surface: #151921  |  bg-card: #151921
@@ -60,6 +60,11 @@ export default function DashboardPage() {
   const [worknotesList, setWorknotesList] = useState<Worknote[]>([]);
   const [newWorknote, setNewWorknote] = useState('');
   const [isPostingNote, setIsPostingNote] = useState(false);
+  const [assignees, setAssignees] = useState<{ id: number; name: string; email: string }[]>([]);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
+  const [assigneeResults, setAssigneeResults] = useState<{ id: number; name: string; email: string }[]>([]);
+  const [showAssigneeSearch, setShowAssigneeSearch] = useState(false);
+  const assigneeRef = useRef<HTMLDivElement>(null);
 
   // Filters
   const [filterStatus, setFilterStatus] = useState('');
@@ -176,11 +181,16 @@ export default function DashboardPage() {
     setShowForm(true);
 
     try {
-      const data = await tasksApi.getWorknotes(task.id);
-      setWorknotesList(data.worknotes);
+      const [notesData, assigneesData] = await Promise.all([
+        tasksApi.getWorknotes(task.id),
+        tasksApi.getAssignees(task.id),
+      ]);
+      setWorknotesList(notesData.worknotes);
+      setAssignees(assigneesData.assignees);
     } catch (err) {
-      console.error("Failed to load worknotes", err);
+      console.error("Failed to load task details", err);
       setWorknotesList([]);
+      setAssignees([]);
     }
   };
 
@@ -572,7 +582,7 @@ export default function DashboardPage() {
                     </div>
                   </form>
 
-                  {/* Right Lane: Worknotes & Activity */}
+                  {/* Right Lane: Assignees, Worknotes & Activity */}
                   <div className="border-t md:border-t-0 md:border-l border-[#222B29]/50 pt-6 md:pt-0 md:pl-6 h-full flex flex-col min-h-0">
                     {!editingTask ? (
                       <div className="bg-[#0B0F14]/50 border border-dashed border-[#222B29] rounded-xl p-8 flex flex-col items-center justify-center text-center py-16 h-full min-h-[300px]">
@@ -584,8 +594,83 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <div className="flex flex-col h-full space-y-4">
+                        {/* Assignees */}
+                        <div ref={assigneeRef}>
+                          <label className="block text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-1.5">Assignees</label>
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {assignees.map((a) => (
+                              <span
+                                key={a.id}
+                                className="inline-flex items-center gap-1 bg-[#0E685E]/20 text-[#0B7D7B] text-[11px] px-2 py-0.5 rounded-full"
+                              >
+                                {a.name}
+                                <button
+                                  onClick={async () => {
+                                    await tasksApi.unassign(editingTask!.id, a.id);
+                                    setAssignees((prev) => prev.filter((x) => x.id !== a.id));
+                                  }}
+                                  className="hover:text-[#EB1740] ml-0.5"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                            <button
+                              onClick={() => setShowAssigneeSearch(!showAssigneeSearch)}
+                              className="text-[10px] text-[#5B6F6B] hover:text-[#0B7D7B] border border-dashed border-[#222B29] px-2 py-0.5 rounded-full transition"
+                            >
+                              + Add
+                            </button>
+                          </div>
+                          {showAssigneeSearch && (
+                            <div className="relative">
+                              <input
+                                type="text"
+                                placeholder="Search users by name or email..."
+                                value={assigneeSearch}
+                                onChange={async (e) => {
+                                  setAssigneeSearch(e.target.value);
+                                  if (e.target.value.length >= 2) {
+                                    const data = await authApi.searchUsers(e.target.value);
+                                    setAssigneeResults(data.users);
+                                  } else {
+                                    setAssigneeResults([]);
+                                  }
+                                }}
+                                className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-1.5 text-xs text-[#E8EDEB] placeholder-[#364442] focus:outline-none focus:border-[#0B7D7B]/50"
+                              />
+                              {assigneeResults.length > 0 && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-[#151921] border border-[#222B29] rounded-lg shadow-xl z-10 max-h-40 overflow-y-auto">
+                                  {assigneeResults.map((u) => (
+                                    <button
+                                      key={u.id}
+                                      className="w-full text-left px-3 py-2 text-xs text-[#E8EDEB] hover:bg-[#222B29] transition flex items-center gap-2"
+                                      onClick={async () => {
+                                        await tasksApi.assign(editingTask!.id, u.id);
+                                        setAssignees((prev) => [...prev, u]);
+                                        setAssigneeSearch('');
+                                        setAssigneeResults([]);
+                                        setShowAssigneeSearch(false);
+                                      }}
+                                    >
+                                      <span className="w-5 h-5 rounded-full bg-[#0E685E]/30 flex items-center justify-center text-[10px] text-[#0B7D7B]">
+                                        {u.name.charAt(0).toUpperCase()}
+                                      </span>
+                                      <div>
+                                        <div className="font-medium">{u.name}</div>
+                                        <div className="text-[#5B6F6B]">{u.email}</div>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Add Worknote */}
                         <div>
-                          <label className="block text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-1.5 font-medium">Add Worknote</label>
+                          <label className="block text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-1.5">Add Worknote</label>
                           <form onSubmit={handlePostWorknote} className="space-y-2">
                             <textarea
                               placeholder="Type a worknote..."

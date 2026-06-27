@@ -41,6 +41,7 @@ export const tasks = pgTable("tasks", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  assignedTo: integer("assigned_to").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   position: integer("position").default(0).notNull(),
@@ -59,11 +60,29 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
   user: one(users, { fields: [tasks.userId], references: [users.id] }),
+  assignee: one(users, { fields: [tasks.assignedTo], references: [users.id] }),
   category: one(categories, {
     fields: [tasks.categoryId],
     references: [categories.id],
   }),
   worknotes: many(worknotes),
+  assignees: many(taskAssignees),
+}));
+
+// ── Task Assignees (many-to-many) ──
+export const taskAssignees = pgTable("task_assignees", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id")
+    .notNull()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+});
+
+export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
+  task: one(tasks, { fields: [taskAssignees.taskId], references: [tasks.id] }),
+  user: one(users, { fields: [taskAssignees.userId], references: [users.id] }),
 }));
 
 // ── Worknotes / Activities ──

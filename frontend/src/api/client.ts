@@ -32,6 +32,7 @@ export const auth = {
   login: (data: { email: string; password: string }) =>
     request<{ user: { id: number; email: string; name: string }; token: string }>('/auth/login', { method: 'POST', body: data }),
   me: () => request<{ user: { id: number; email: string; name: string } }>('/auth/me'),
+  searchUsers: (q: string) => request<{ users: { id: number; name: string; email: string }[] }>(`/auth/users?q=${encodeURIComponent(q)}`),
 };
 
 // ── Tasks ──
@@ -71,6 +72,11 @@ export const tasks = {
     request<{ worknote: Worknote }>(`/tasks/${taskId}/worknotes`, { method: 'POST', body: { content } }),
   reorder: (taskId: number, status: string, targetTaskId?: number) =>
     request<{ success: boolean }>('/tasks/reorder', { method: 'POST', body: { taskId, status, targetTaskId } }),
+  getAssignees: (taskId: number) => request<{ assignees: { id: number; name: string; email: string }[] }>(`/tasks/${taskId}/assignees`),
+  assign: (taskId: number, assigneeId: number) =>
+    request<{ assignment: { id: number; taskId: number; userId: number } }>(`/tasks/${taskId}/assign`, { method: 'POST', body: { assigneeId } }),
+  unassign: (taskId: number, assigneeId: number) =>
+    request<{ success: boolean }>(`/tasks/${taskId}/assign/${assigneeId}`, { method: 'DELETE' }),
 };
 
 // ── Categories ──

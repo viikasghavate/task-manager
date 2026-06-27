@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, and, ne, or, ilike } from "drizzle-orm";
 import { registerSchema, loginSchema } from "../types/schemas.js";
 import { JWT_SECRET } from "../middleware/auth.js";
 
@@ -81,6 +81,37 @@ auth.get("/me", async (c) => {
       .limit(1);
     if (!user) return c.json({ error: "User not found" }, 404);
     return c.json({ user });
+  } catch {
+    return c.json({ error: "Invalid token" }, 401);
+  }
+});
+
+// GET /auth/users — search users by name/email for collaboration
+auth.get("/users", async (c) => {
+  const authHeader = c.req.header("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  try {
+    const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { userId: number };
+    const query = c.req.query("q");
+    if (!query || query.length < 2) {
+      return c.json({ users: [] });
+    }
+    const result = await db
+      .select({ id: users.id, name: users.name, email: users.email })
+      .from(users)
+      .where(
+        and(
+          ne(users.id, payload.userId),
+          or(
+            ilike(users.name, `%${query}%`),
+            ilike(users.email, `%${query}%`)
+          )
+        )
+      )
+      .limit(10);
+    return c.json({ users: result });
   } catch {
     return c.json({ error: "Invalid token" }, 401);
   }
