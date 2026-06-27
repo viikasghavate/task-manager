@@ -2,19 +2,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { tasks as tasksApi, categories as categoriesApi, type Task, type Category } from '../api/client';
 
-// ── Theme ──
+// ── Theme (exact colors from reference image) ──
+// bg-main: #0B0F14  |  bg-surface: #151921  |  bg-card: #151921
+// bg-input: #0B0F14  |  border: #222B29  |  text-primary: #E8EDEB
+// text-muted: #5B6F6B  |  text-secondary: #839592
+// accent-teal: #0B7D7B  |  accent-teal-dark: #0E685E
+// accent-yellow: #E6C404  |  accent-pink: #EB1740
+// priority-low: #839592  |  priority-medium: #E6C404  |  priority-high: #EB1740
+
 const COLORS = {
-  todo: { border: 'border-l-cyan-500', badge: 'bg-cyan-500/20 text-cyan-400', icon: 'text-cyan-400' },
-  in_progress: { border: 'border-l-yellow-500', badge: 'bg-yellow-500/20 text-yellow-400', icon: 'text-yellow-400' },
-  on_hold: { border: 'border-l-pink-500', badge: 'bg-pink-500/20 text-pink-400', icon: 'text-pink-400' },
-  done: { border: 'border-l-emerald-500', badge: 'bg-emerald-500/20 text-emerald-400', icon: 'text-emerald-400' },
+  todo: { border: 'border-l-[#0E685E]', badge: 'bg-[#0E685E]/20 text-[#0B7D7B]', icon: 'text-[#0B7D7B]' },
+  in_progress: { border: 'border-l-[#E6C404]', badge: 'bg-[#E6C404]/20 text-[#E6C404]', icon: 'text-[#E6C404]' },
+  on_hold: { border: 'border-l-[#EB1740]', badge: 'bg-[#EB1740]/20 text-[#EB1740]', icon: 'text-[#EB1740]' },
+  done: { border: 'border-l-[#0E685E]', badge: 'bg-[#0E685E]/20 text-[#0E685E]', icon: 'text-[#0E685E]' },
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low: 'bg-gray-500',
-  medium: 'bg-yellow-500',
-  high: 'bg-pink-500',
-  urgent: 'bg-red-500',
+  low: 'bg-[#839592]',
+  medium: 'bg-[#E6C404]',
+  high: 'bg-[#EB1740]',
+  urgent: 'bg-[#EB1740]',
 };
 
 const KANBAN_LANES = [
@@ -172,46 +179,46 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F14] text-white flex">
+    <div className="min-h-screen bg-[#0B0F14] text-[#E8EDEB] flex">
       {/* ── Sidebar ── */}
       {sidebarOpen && (
-        <aside className="w-64 shrink-0 bg-[#151921] border-r border-gray-800/50 flex flex-col p-5 gap-5">
+        <aside className="w-64 shrink-0 bg-[#151921] border-r border-[#222B29]/50 flex flex-col p-5 gap-5">
           {/* View Mode */}
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.12em] text-gray-500 uppercase mb-2">View Mode</p>
+            <p className="text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-2">View Mode</p>
             <div className="relative">
               <select
                 value="kanban"
-                className="w-full bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer"
+                className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer"
               >
                 <option value="kanban">⊞ Kanban Board</option>
               </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">▼</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5B6F6B] text-xs">▼</span>
             </div>
           </div>
 
           {/* Search */}
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.12em] text-gray-500 uppercase mb-2">Search</p>
+            <p className="text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-2">Search</p>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5B6F6B] text-sm">🔍</span>
               <input
                 type="text"
                 placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0B0F14] border border-gray-800 rounded-lg pl-9 pr-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500/50"
+                className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg pl-9 pr-3 py-2 text-sm placeholder-[#364442] focus:outline-none focus:border-[#0B7D7B]/50"
               />
             </div>
           </div>
 
           {/* Filters */}
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.12em] text-gray-500 uppercase mb-2">Filters</p>
+            <p className="text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-2">Filters</p>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer mb-2"
+              className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer mb-2"
             >
               <option value="">All Statuses</option>
               {STATUS_OPTIONS.map((s) => (
@@ -221,7 +228,7 @@ export default function DashboardPage() {
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer"
+              className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer"
             >
               <option value="">All Categories</option>
               {categoryList.map((c) => (
@@ -232,11 +239,11 @@ export default function DashboardPage() {
 
           {/* Priority */}
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.12em] text-gray-500 uppercase mb-2">Priority</p>
+            <p className="text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-2">Priority</p>
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
-              className="w-full bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer"
+              className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer"
             >
               <option value="">All Priorities</option>
               {PRIORITY_OPTIONS.map((p) => (
@@ -247,11 +254,11 @@ export default function DashboardPage() {
 
           {/* Sort */}
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.12em] text-gray-500 uppercase mb-2">Sort By</p>
+            <p className="text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-2">Sort By</p>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer"
+              className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm appearance-none cursor-pointer"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
@@ -263,14 +270,14 @@ export default function DashboardPage() {
           <div className="space-y-2 mt-auto">
             <button
               onClick={handleClearCompleted}
-              className="w-full flex items-center gap-2 px-3 py-2 border border-red-500/30 text-red-400 rounded-lg text-sm hover:bg-red-500/10 transition"
+              className="w-full flex items-center gap-2 px-3 py-2 border border-[#EB1740]/30 text-[#EB1740] rounded-lg text-sm hover:bg-[#EB1740]/10 transition"
             >
               <span className="text-sm">🗑</span>
               Clear Completed
             </button>
             <button
               onClick={() => setShowCategoryForm(!showCategoryForm)}
-              className="w-full flex items-center gap-2 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium transition"
+              className="w-full flex items-center gap-2 px-3 py-2 bg-[#0E685E] hover:bg-[#0B7D7B] text-white rounded-lg text-sm font-medium transition"
             >
               <span className="text-sm">🔗</span>
               {showCategoryForm ? 'Close Categories' : 'Manage Categories'}
@@ -282,28 +289,28 @@ export default function DashboardPage() {
       {/* ── Main Area ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="h-14 shrink-0 flex items-center justify-between px-5 border-b border-gray-800/50 bg-[#0B0F14]">
+        <header className="h-14 shrink-0 flex items-center justify-between px-5 border-b border-[#222B29]/50 bg-[#0B0F14]">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-400 hover:text-white text-lg"
+              className="text-[#5B6F6B] hover:text-white text-lg"
             >
-              {sidebarOpen ? '☰' : '☰'}
+              ☰
             </button>
-            <span className="text-lg font-bold text-cyan-400">TaskFlow</span>
-            <span className="text-xs text-gray-500 bg-gray-800/60 px-2 py-0.5 rounded-full">
+            <span className="text-lg font-bold text-[#0B7D7B]">TaskFlow</span>
+            <span className="text-xs text-[#5B6F6B] bg-[#222B29]/60 px-2 py-0.5 rounded-full">
               {taskList.length} tasks
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400">{user?.name}</span>
+            <span className="text-sm text-[#839592]">{user?.name}</span>
             <button
               onClick={() => { resetForm(); setShowForm(true); }}
-              className="flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition"
+              className="flex items-center gap-1.5 bg-[#0E685E] hover:bg-[#0B7D7B] text-white px-4 py-1.5 rounded-lg text-sm font-medium transition"
             >
               <span>+</span> New Task
             </button>
-            <button onClick={logout} className="text-gray-500 hover:text-white text-sm transition">
+            <button onClick={logout} className="text-[#5B6F6B] hover:text-white text-sm transition">
               Sign out
             </button>
           </div>
@@ -313,21 +320,21 @@ export default function DashboardPage() {
         <div className="flex-1 p-5 overflow-auto">
           {/* Category Form */}
           {showCategoryForm && (
-            <div className="mb-5 p-4 bg-[#151921] rounded-xl border border-gray-800">
+            <div className="mb-5 p-4 bg-[#151921] rounded-xl border border-[#222B29]">
               <h3 className="text-sm font-medium mb-3">Manage Categories</h3>
               <form onSubmit={handleCategorySubmit} className="flex gap-3 items-end mb-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Name</label>
+                  <label className="block text-xs text-[#5B6F6B] mb-1">Name</label>
                   <input
                     type="text"
                     value={catName}
                     onChange={(e) => setCatName(e.target.value)}
-                    className="bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-1.5 text-sm"
+                    className="bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-1.5 text-sm"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Color</label>
+                  <label className="block text-xs text-[#5B6F6B] mb-1">Color</label>
                   <input
                     type="color"
                     value={catColor}
@@ -337,7 +344,7 @@ export default function DashboardPage() {
                 </div>
                 <button
                   type="submit"
-                  className="bg-cyan-600 hover:bg-cyan-500 px-4 py-1.5 rounded-lg text-sm transition"
+                  className="bg-[#0E685E] hover:bg-[#0B7D7B] px-4 py-1.5 rounded-lg text-sm transition"
                 >
                   Add
                 </button>
@@ -346,13 +353,13 @@ export default function DashboardPage() {
                 {categoryList.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center gap-2 bg-gray-800 px-3 py-1 rounded-full text-sm"
+                    className="flex items-center gap-2 bg-[#222B29] px-3 py-1 rounded-full text-sm"
                   >
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color }} />
                     {c.name}
                     <button
                       onClick={() => handleDeleteCategory(c.id)}
-                      className="text-gray-500 hover:text-red-400 ml-1"
+                      className="text-[#5B6F6B] hover:text-[#EB1740] ml-1"
                     >
                       ×
                     </button>
@@ -364,7 +371,7 @@ export default function DashboardPage() {
 
           {/* Task Form */}
           {showForm && (
-            <div className="mb-5 p-4 bg-[#151921] rounded-xl border border-gray-800">
+            <div className="mb-5 p-4 bg-[#151921] rounded-xl border border-[#222B29]">
               <h3 className="text-sm font-medium mb-3">
                 {editingTask ? 'Edit Task' : 'New Task'}
               </h3>
@@ -374,21 +381,21 @@ export default function DashboardPage() {
                   placeholder="Task title"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
-                  className="w-full bg-[#0B0F14] border border-gray-800 rounded-lg px-4 py-2 text-sm"
+                  className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-4 py-2 text-sm"
                   required
                 />
                 <textarea
                   placeholder="Description (optional)"
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
-                  className="w-full bg-[#0B0F14] border border-gray-800 rounded-lg px-4 py-2 text-sm"
+                  className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-4 py-2 text-sm"
                   rows={2}
                 />
                 <div className="flex gap-3 flex-wrap">
                   <select
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as any)}
-                    className="bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-1.5 text-sm"
+                    className="bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-1.5 text-sm"
                   >
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s} value={s}>{s.replace('_', ' ')}</option>
@@ -397,7 +404,7 @@ export default function DashboardPage() {
                   <select
                     value={formPriority}
                     onChange={(e) => setFormPriority(e.target.value as any)}
-                    className="bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-1.5 text-sm"
+                    className="bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-1.5 text-sm"
                   >
                     {PRIORITY_OPTIONS.map((p) => (
                       <option key={p} value={p}>{p}</option>
@@ -407,12 +414,12 @@ export default function DashboardPage() {
                     type="datetime-local"
                     value={formDueDate}
                     onChange={(e) => setFormDueDate(e.target.value)}
-                    className="bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-1.5 text-sm"
+                    className="bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-1.5 text-sm"
                   />
                   <select
                     value={formCategoryId}
                     onChange={(e) => setFormCategoryId(e.target.value ? Number(e.target.value) : '')}
-                    className="bg-[#0B0F14] border border-gray-800 rounded-lg px-3 py-1.5 text-sm"
+                    className="bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-1.5 text-sm"
                   >
                     <option value="">No category</option>
                     {categoryList.map((c) => (
@@ -423,14 +430,14 @@ export default function DashboardPage() {
                 <div className="flex gap-2">
                   <button
                     type="submit"
-                    className="bg-cyan-600 hover:bg-cyan-500 px-4 py-1.5 rounded-lg text-sm transition"
+                    className="bg-[#0E685E] hover:bg-[#0B7D7B] px-4 py-1.5 rounded-lg text-sm transition"
                   >
                     {editingTask ? 'Update' : 'Create'}
                   </button>
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="bg-gray-800 hover:bg-gray-700 px-4 py-1.5 rounded-lg text-sm transition"
+                    className="bg-[#222B29] hover:bg-[#2D3835] px-4 py-1.5 rounded-lg text-sm transition"
                   >
                     Cancel
                   </button>
@@ -454,17 +461,17 @@ export default function DashboardPage() {
                   }}
                 >
                   {/* Column header */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800/50">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#222B29]/50">
                     <div className="flex items-center gap-2">
                       <span className={`text-sm ${theme.icon}`}>{lane.icon}</span>
-                      <h3 className="text-sm font-semibold text-gray-300">{lane.label}</h3>
+                      <h3 className="text-sm font-semibold text-[#C8D1CE]">{lane.label}</h3>
                       <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${theme.badge}`}>
                         {tasks.length}
                       </span>
                     </div>
                     <button
                       onClick={() => { resetForm(); setFormStatus(lane.key as any); setShowForm(true); }}
-                      className="text-gray-500 hover:text-white text-sm"
+                      className="text-[#5B6F6B] hover:text-white text-sm"
                     >
                       +
                     </button>
@@ -473,7 +480,7 @@ export default function DashboardPage() {
                   {/* Cards */}
                   <div className="p-3 space-y-2 flex-1">
                     {tasks.length === 0 && (
-                      <div className="border-2 border-dashed border-gray-800 rounded-lg flex flex-col items-center justify-center py-8 text-gray-600">
+                      <div className="border-2 border-dashed border-[#222B29] rounded-lg flex flex-col items-center justify-center py-8 text-[#5B6F6B]">
                         <span className="text-2xl mb-1">⊞</span>
                         <span className="text-xs">No tasks</span>
                       </div>
@@ -492,7 +499,7 @@ export default function DashboardPage() {
                           <div className="flex items-start gap-2.5">
                             {/* Checkbox */}
                             <span className={`mt-0.5 shrink-0 text-sm ${
-                              task.status === 'done' ? 'text-emerald-400' : 'text-gray-600'
+                              task.status === 'done' ? 'text-[#0E685E]' : 'text-[#5B6F6B]'
                             }`}>
                               {task.status === 'done' ? '✓' : '○'}
                             </span>
@@ -500,14 +507,14 @@ export default function DashboardPage() {
                             <div className="flex-1 min-w-0">
                               {/* Title */}
                               <h4 className={`text-sm font-medium leading-snug ${
-                                task.status === 'done' ? 'line-through text-gray-500' : 'text-gray-100'
+                                task.status === 'done' ? 'line-through text-[#5B6F6B]' : 'text-[#E8EDEB]'
                               }`}>
                                 {task.title}
                               </h4>
 
                               {/* Description */}
                               {task.description && (
-                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{task.description}</p>
+                                <p className="text-xs text-[#5B6F6B] mt-1 line-clamp-2">{task.description}</p>
                               )}
 
                               {/* Tags */}
@@ -515,12 +522,12 @@ export default function DashboardPage() {
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${theme.badge}`}>
                                   {task.status === 'done' ? '✓ Done' : task.status.replace('_', ' ')}
                                 </span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-400 flex items-center gap-1">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#222B29] text-[#839592] flex items-center gap-1">
                                   <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_COLORS[task.priority]}`} />
                                   {task.priority}
                                 </span>
                                 {cat && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-400 flex items-center gap-1">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#222B29] text-[#839592] flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
                                     {cat.name}
                                   </span>
@@ -528,7 +535,7 @@ export default function DashboardPage() {
                               </div>
 
                               {/* Metadata */}
-                              <div className="flex items-center gap-2 mt-1.5 text-[10px] text-gray-600">
+                              <div className="flex items-center gap-2 mt-1.5 text-[10px] text-[#5B6F6B]">
                                 {task.dueDate && (
                                   <span>Due {new Date(task.dueDate).toLocaleDateString()}</span>
                                 )}
@@ -539,13 +546,13 @@ export default function DashboardPage() {
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
                               <button
                                 onClick={() => startEdit(task)}
-                                className="text-gray-500 hover:text-white text-xs px-1"
+                                className="text-[#5B6F6B] hover:text-white text-xs px-1"
                               >
                                 ✎
                               </button>
                               <button
                                 onClick={() => handleDelete(task.id)}
-                                className="text-gray-500 hover:text-red-400 text-xs px-1"
+                                className="text-[#5B6F6B] hover:text-[#EB1740] text-xs px-1"
                               >
                                 ✕
                               </button>
