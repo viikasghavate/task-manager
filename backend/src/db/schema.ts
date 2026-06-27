@@ -2,7 +2,7 @@ import { pgTable, serial, text, timestamp, integer, pgEnum } from "drizzle-orm/p
 import { relations } from "drizzle-orm";
 
 // ── Enums ──
-export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "done"]);
+export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "on_hold", "done"]);
 export const taskPriorityEnum = pgEnum("task_priority", ["low", "medium", "high", "urgent"]);
 
 // ── Users ──

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { tasks as tasksApi, categories as categoriesApi, type Task, type Category } from '../api/client';
 
@@ -9,24 +9,29 @@ const PRIORITY_COLORS: Record<string, string> = {
   urgent: 'bg-red-500',
 };
 
-const STATUS_OPTIONS = ['todo', 'in_progress', 'done'] as const;
+const STATUS_OPTIONS = ['todo', 'in_progress', 'on_hold', 'done'] as const;
 const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'urgent'] as const;
+
+const KANBAN_LANES = [
+  { key: 'todo', label: 'To Do', color: 'border-t-indigo-500' },
+  { key: 'in_progress', label: 'In Progress', color: 'border-t-blue-500' },
+  { key: 'on_hold', label: 'On Hold', color: 'border-t-amber-500' },
+  { key: 'done', label: 'Done', color: 'border-t-emerald-500' },
+] as const;
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const [taskList, setTaskList] = useState<Task[]>([]);
   const [categoryList, setCategoryList] = useState<Category[]>([]);
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterPriority, setFilterPriority] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
 
   // Form state
   const [formTitle, setFormTitle] = useState('');
   const [formDesc, setFormDesc] = useState('');
-  const [formStatus, setFormStatus] = useState<'todo' | 'in_progress' | 'done'>('todo');
+  const [formStatus, setFormStatus] = useState<'todo' | 'in_progress' | 'on_hold' | 'done'>('todo');
   const [formPriority, setFormPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [formDueDate, setFormDueDate] = useState('');
   const [formCategoryId, setFormCategoryId] = useState<number | ''>('');
@@ -35,24 +40,23 @@ export default function DashboardPage() {
   const [catName, setCatName] = useState('');
   const [catColor, setCatColor] = useState('#6366f1');
 
-  const loadTasks = async () => {
-    const params: Record<string, string> = {};
-    if (filterStatus) params.status = filterStatus;
-    if (filterPriority) params.priority = filterPriority;
-    if (filterCategory) params.categoryId = filterCategory;
-    const data = await tasksApi.list(params);
+  const loadTasks = useCallback(async () => {
+    const data = await tasksApi.list();
     setTaskList(data.tasks);
-  };
+  }, []);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     const data = await categoriesApi.list();
     setCategoryList(data.categories);
-  };
+  }, []);
 
   useEffect(() => {
     loadTasks();
     loadCategories();
-  }, [filterStatus, filterPriority, filterCategory]);
+  }, [loadTasks, loadCategories]);
+
+  const tasksByStatus = (status: string) =>
+    taskList.filter((t) => t.status === status);
 
   const resetForm = () => {
     setFormTitle('');
@@ -101,6 +105,12 @@ export default function DashboardPage() {
     setShowForm(true);
   };
 
+  const handleDrop = async (taskId: number, newStatus: string) => {
+    setDraggingId(null);
+    await tasksApi.update(taskId, { status: newStatus as any });
+    loadTasks();
+  };
+
   const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await categoriesApi.create({ name: catName, color: catColor });
@@ -128,42 +138,12 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto p-6">
-        {/* Filters + Actions */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm"
-          >
-            <option value="">All statuses</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s.replace('_', ' ')}</option>
-            ))}
-          </select>
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm"
-          >
-            <option value="">All priorities</option>
-            {PRIORITY_OPTIONS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm"
-          >
-            <option value="">All categories</option>
-            {categoryList.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+      <div className="p-6">
+        {/* Actions bar */}
+        <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
-            className="ml-auto bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-lg text-sm font-medium transition"
+            className="bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-lg text-sm font-medium transition"
           >
             + New Task
           </button>
@@ -303,61 +283,85 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Task List */}
-        <div className="space-y-2">
-          {taskList.length === 0 && (
-            <p className="text-gray-500 text-center py-12">No tasks yet. Create one!</p>
-          )}
-          {taskList.map((task) => {
-            const cat = categoryList.find((c) => c.id === task.categoryId);
+        {/* Kanban Board */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {KANBAN_LANES.map((lane) => {
+            const tasks = tasksByStatus(lane.key);
             return (
               <div
-                key={task.id}
-                className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition group"
+                key={lane.key}
+                className={`bg-gray-900/50 rounded-xl border-t-4 ${lane.color} border-gray-800 min-h-[300px]`}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (draggingId !== null) handleDrop(draggingId, lane.key);
+                }}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[task.priority]}`} />
-                      <h3 className={`font-medium ${task.status === 'done' ? 'line-through text-gray-500' : ''}`}>
-                        {task.title}
-                      </h3>
-                    </div>
-                    {task.description && (
-                      <p className="text-sm text-gray-500 line-clamp-2">{task.description}</p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                      <span className={`px-2 py-0.5 rounded-full bg-gray-800 capitalize`}>
-                        {task.status.replace('_', ' ')}
-                      </span>
-                      <span className="capitalize">{task.priority}</span>
-                      {cat && (
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                          {cat.name}
-                        </span>
-                      )}
-                      {task.dueDate && (
-                        <span>
-                          Due: {new Date(task.dueDate).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <button
-                      onClick={() => startEdit(task)}
-                      className="text-gray-500 hover:text-white text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(task.id)}
-                      className="text-gray-500 hover:text-red-400 text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                {/* Lane header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+                  <h3 className="text-sm font-semibold text-gray-300">{lane.label}</h3>
+                  <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">
+                    {tasks.length}
+                  </span>
+                </div>
+
+                {/* Lane body */}
+                <div className="p-3 space-y-2">
+                  {tasks.length === 0 && (
+                    <p className="text-xs text-gray-600 text-center py-6">Drop tasks here</p>
+                  )}
+                  {tasks.map((task) => {
+                    const cat = categoryList.find((c) => c.id === task.categoryId);
+                    return (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={() => setDraggingId(task.id)}
+                        className={`bg-gray-900 border border-gray-800 rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-gray-700 transition group ${
+                          draggingId === task.id ? 'opacity-50' : ''
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_COLORS[task.priority]}`} />
+                              <h4 className={`text-sm font-medium truncate ${task.status === 'done' ? 'line-through text-gray-500' : ''}`}>
+                                {task.title}
+                              </h4>
+                            </div>
+                            {task.description && (
+                              <p className="text-xs text-gray-500 line-clamp-2 mb-1">{task.description}</p>
+                            )}
+                            <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-gray-500">
+                              <span className="capitalize">{task.priority}</span>
+                              {cat && (
+                                <span className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                                  {cat.name}
+                                </span>
+                              )}
+                              {task.dueDate && (
+                                <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition shrink-0">
+                            <button
+                              onClick={() => startEdit(task)}
+                              className="text-gray-500 hover:text-white text-xs"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(task.id)}
+                              className="text-gray-500 hover:text-red-400 text-xs"
+                            >
+                              Del
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );

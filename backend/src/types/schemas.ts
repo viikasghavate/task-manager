@@ -16,7 +16,7 @@ export const loginSchema = z.object({
 export const createTaskSchema = z.object({
   title: z.string().min(1).max(500),
   description: z.string().max(2000).default(""),
-  status: z.enum(["todo", "in_progress", "done"]).default("todo"),
+  status: z.enum(["todo", "in_progress", "on_hold", "done"]).default("todo"),
   priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
   dueDate: z.string().datetime().optional(),
   categoryId: z.number().int().positive().optional(),
@@ -25,7 +25,7 @@ export const createTaskSchema = z.object({
 export const updateTaskSchema = z.object({
   title: z.string().min(1).max(500).optional(),
   description: z.string().max(2000).optional(),
-  status: z.enum(["todo", "in_progress", "done"]).optional(),
+  status: z.enum(["todo", "in_progress", "on_hold", "done"]).optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
   dueDate: z.string().datetime().optional().nullable(),
   categoryId: z.number().int().positive().optional().nullable(),

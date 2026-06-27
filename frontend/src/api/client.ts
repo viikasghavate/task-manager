@@ -39,7 +39,7 @@ export interface Task {
   id: number;
   title: string;
   description: string;
-  status: 'todo' | 'in_progress' | 'done';
+  status: 'todo' | 'in_progress' | 'on_hold' | 'done';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   dueDate: string | null;
   categoryId: number | null;
