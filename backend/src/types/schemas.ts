@@ -18,6 +18,7 @@ export const createTaskSchema = z.object({
   description: z.string().max(2000).default(""),
   status: z.enum(["todo", "in_progress", "on_hold", "done"]).default("todo"),
   priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  startDate: z.string().datetime().optional(),
   dueDate: z.string().datetime().optional(),
   categoryId: z.number().int().positive().optional(),
 });
@@ -27,6 +28,7 @@ export const updateTaskSchema = z.object({
   description: z.string().max(2000).optional(),
   status: z.enum(["todo", "in_progress", "on_hold", "done"]).optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  startDate: z.string().datetime().optional().nullable(),
   dueDate: z.string().datetime().optional().nullable(),
   categoryId: z.number().int().positive().optional().nullable(),
 });

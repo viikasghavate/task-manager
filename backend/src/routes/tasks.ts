@@ -69,6 +69,7 @@ taskRoutes.post("/", async (c) => {
     .insert(tasks)
     .values({
       ...data,
+      startDate: data.startDate ? new Date(data.startDate) : null,
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
       userId,
     })
@@ -108,6 +109,9 @@ taskRoutes.patch("/:id", async (c) => {
   }
 
   const updateData: Record<string, any> = { ...data, updatedAt: new Date() };
+  if (data.startDate !== undefined) {
+    updateData.startDate = data.startDate ? new Date(data.startDate) : null;
+  }
   if (data.dueDate !== undefined) {
     updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null;
   }

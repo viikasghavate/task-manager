@@ -33,6 +33,7 @@ export const tasks = pgTable("tasks", {
   description: text("description").default(""),
   status: taskStatusEnum("status").default("todo").notNull(),
   priority: taskPriorityEnum("priority").default("medium").notNull(),
+  startDate: timestamp("start_date"),
   dueDate: timestamp("due_date"),
   categoryId: integer("category_id").references(() => categories.id, {
     onDelete: "set null",

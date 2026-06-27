@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const [formDesc, setFormDesc] = useState('');
   const [formStatus, setFormStatus] = useState<'todo' | 'in_progress' | 'on_hold' | 'done'>('todo');
   const [formPriority, setFormPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [formStartDate, setFormStartDate] = useState('');
   const [formDueDate, setFormDueDate] = useState('');
   const [formCategoryId, setFormCategoryId] = useState<number | ''>('');
 
@@ -125,6 +126,7 @@ export default function DashboardPage() {
     setFormDesc('');
     setFormStatus('todo');
     setFormPriority('medium');
+    setFormStartDate('');
     setFormDueDate('');
     setFormCategoryId('');
     setEditingTask(null);
@@ -140,8 +142,9 @@ export default function DashboardPage() {
       description: formDesc,
       status: formStatus,
       priority: formPriority,
+      startDate: formStartDate ? new Date(formStartDate).toISOString() : null,
+      dueDate: formDueDate ? new Date(formDueDate).toISOString() : null,
     };
-    if (formDueDate) payload.dueDate = new Date(formDueDate).toISOString();
     if (formCategoryId !== '') payload.categoryId = formCategoryId;
 
     if (editingTask) {
@@ -164,6 +167,7 @@ export default function DashboardPage() {
     setFormDesc(task.description);
     setFormStatus(task.status);
     setFormPriority(task.priority);
+    setFormStartDate(task.startDate ? task.startDate.slice(0, 16) : '');
     setFormDueDate(task.dueDate ? task.dueDate.slice(0, 16) : '');
     setFormCategoryId(task.categoryId ?? '');
     setShowForm(true);
@@ -496,6 +500,15 @@ export default function DashboardPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
+                        <label className="block text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-1.5">Start Date</label>
+                        <input
+                          type="datetime-local"
+                          value={formStartDate}
+                          onChange={(e) => setFormStartDate(e.target.value)}
+                          className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm text-[#E8EDEB] focus:outline-none focus:border-[#0B7D7B]/50"
+                        />
+                      </div>
+                      <div>
                         <label className="block text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-1.5">Due Date</label>
                         <input
                           type="datetime-local"
@@ -504,19 +517,19 @@ export default function DashboardPage() {
                           className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm text-[#E8EDEB] focus:outline-none focus:border-[#0B7D7B]/50"
                         />
                       </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-1.5">Category</label>
-                        <select
-                          value={formCategoryId}
-                          onChange={(e) => setFormCategoryId(e.target.value ? Number(e.target.value) : '')}
-                          className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm text-[#E8EDEB] focus:outline-none focus:border-[#0B7D7B]/50"
-                        >
-                          <option value="">No category</option>
-                          {categoryList.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
-                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold tracking-[0.12em] text-[#5B6F6B] uppercase mb-1.5">Category</label>
+                      <select
+                        value={formCategoryId}
+                        onChange={(e) => setFormCategoryId(e.target.value ? Number(e.target.value) : '')}
+                        className="w-full bg-[#0B0F14] border border-[#222B29] rounded-lg px-3 py-2 text-sm text-[#E8EDEB] focus:outline-none focus:border-[#0B7D7B]/50"
+                      >
+                        <option value="">No category</option>
+                        {categoryList.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="flex gap-3 justify-end pt-4 border-t border-[#222B29]/50">
                       <button
@@ -691,12 +704,15 @@ export default function DashboardPage() {
                                 </div>
 
                                 {/* Metadata */}
-                                <div className="flex items-center gap-2 mt-1.5 text-[10px] text-[#5B6F6B]">
+                                <div className="flex flex-col gap-1 mt-1.5 text-[10px] text-[#5B6F6B]">
+                                  {task.startDate && (
+                                    <span>Start: {new Date(task.startDate).toLocaleDateString()}</span>
+                                  )}
                                   {task.dueDate && (() => {
                                     const isExpired = task.status !== 'done' && new Date(task.dueDate).getTime() < Date.now();
                                     return (
                                       <span className={isExpired ? 'text-[#EB1740] font-medium' : ''}>
-                                        {isExpired ? '⚠️ Overdue ' : 'Due '}{new Date(task.dueDate).toLocaleDateString()}
+                                        {isExpired ? '⚠️ Overdue: ' : 'Due: '}{new Date(task.dueDate).toLocaleDateString()}
                                       </span>
                                     );
                                   })()}
@@ -738,6 +754,7 @@ export default function DashboardPage() {
                       <th className="px-6 py-4">Status</th>
                       <th className="px-6 py-4">Priority</th>
                       <th className="px-6 py-4">Category</th>
+                      <th className="px-6 py-4">Start Date</th>
                       <th className="px-6 py-4">Due Date</th>
                       <th className="px-6 py-4 text-right">Actions</th>
                     </tr>
@@ -745,7 +762,7 @@ export default function DashboardPage() {
                   <tbody className="divide-y divide-[#222B29]/30 text-sm text-[#E8EDEB]">
                     {filteredTasks.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-[#5B6F6B]">
+                        <td colSpan={8} className="px-6 py-12 text-center text-[#5B6F6B]">
                           <span className="text-2xl block mb-2">☰</span>
                           No tasks match filters.
                         </td>
@@ -812,6 +829,13 @@ export default function DashboardPage() {
                               </span>
                             ) : (
                               <span className="text-xs text-[#364442]">—</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-[#839592]">
+                            {task.startDate ? (
+                              new Date(task.startDate).toLocaleDateString()
+                            ) : (
+                              <span className="text-[#364442]">—</span>
                             )}
                           </td>
                           <td className="px-6 py-4 text-xs text-[#839592]">

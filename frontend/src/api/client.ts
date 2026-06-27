@@ -41,6 +41,7 @@ export interface Task {
   description: string;
   status: 'todo' | 'in_progress' | 'on_hold' | 'done';
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  startDate: string | null;
   dueDate: string | null;
   categoryId: number | null;
   userId: number;

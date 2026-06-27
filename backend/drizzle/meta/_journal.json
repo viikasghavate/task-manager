@@ -15,6 +15,13 @@
       "when": 1782557064439,
       "tag": "0001_ordinary_maginty",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782558231007,
+      "tag": "0002_slow_namora",
+      "breakpoints": true
     }
   ]
 }
