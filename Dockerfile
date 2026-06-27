@@ -34,4 +34,4 @@ ENV NODE_ENV=production
 ENV PORT=3001
 
 # Run migrations on startup, then start the app
-CMD npx drizzle-kit push 2>/dev/null && node dist/index.js
+CMD node dist/index.js
