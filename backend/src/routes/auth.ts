@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { sign } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { hash, compare } from "bcryptjs";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
@@ -29,7 +29,7 @@ auth.post("/register", async (c) => {
     .values({ email, name, passwordHash })
     .returning({ id: users.id, email: users.email, name: users.name });
 
-  const token = sign({ userId: user.id, email: user.email }, JWT_SECRET, {
+  const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
     expiresIn: "7d",
   });
 
@@ -55,7 +55,7 @@ auth.post("/login", async (c) => {
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
-  const token = sign({ userId: user.id, email: user.email }, JWT_SECRET, {
+  const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
     expiresIn: "7d",
   });
 
@@ -71,8 +71,7 @@ auth.get("/me", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
   try {
-    const { verify } = await import("jsonwebtoken");
-    const payload = verify(authHeader.slice(7), JWT_SECRET) as { userId: number; email: string };
+    const payload = jwt.verify(authHeader.slice(7), JWT_SECRET) as { userId: number; email: string };
     const [user] = await db
       .select({ id: users.id, email: users.email, name: users.name })
       .from(users)
