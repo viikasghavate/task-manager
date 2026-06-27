@@ -43,6 +43,7 @@ export const tasks = pgTable("tasks", {
     .references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  position: integer("position").default(0).notNull(),
 });
 
 // ── Relations ──

@@ -47,6 +47,7 @@ export interface Task {
   userId: number;
   createdAt: string;
   updatedAt: string;
+  position: number;
 }
 
 export interface Worknote {
@@ -68,6 +69,8 @@ export const tasks = {
   getWorknotes: (taskId: number) => request<{ worknotes: Worknote[] }>(`/tasks/${taskId}/worknotes`),
   postWorknote: (taskId: number, content: string) =>
     request<{ worknote: Worknote }>(`/tasks/${taskId}/worknotes`, { method: 'POST', body: { content } }),
+  reorder: (taskId: number, status: string, targetTaskId?: number) =>
+    request<{ success: boolean }>('/tasks/reorder', { method: 'POST', body: { taskId, status, targetTaskId } }),
 };
 
 // ── Categories ──

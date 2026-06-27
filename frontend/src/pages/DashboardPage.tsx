@@ -116,6 +116,9 @@ export default function DashboardPage() {
         const order = { urgent: 0, high: 1, medium: 2, low: 3 };
         return (order[a.priority] ?? 2) - (order[b.priority] ?? 2);
       }
+      if (sortBy === 'custom') {
+        return a.position - b.position;
+      }
       return 0;
     });
 
@@ -204,9 +207,29 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDrop = async (taskId: number, newStatus: string) => {
+  const handleDrop = async (taskId: number, newStatus: string, targetTaskId?: number) => {
     setDraggingId(null);
-    await tasksApi.update(taskId, { status: newStatus as any });
+    await tasksApi.reorder(taskId, newStatus, targetTaskId);
+    loadTasks();
+  };
+
+  const handleMoveTask = async (task: Task, direction: 'up' | 'down') => {
+    const idx = filteredTasks.findIndex((t) => t.id === task.id);
+    if (idx === -1) return;
+
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= filteredTasks.length) return;
+
+    const targetTask = filteredTasks[targetIdx];
+
+    if (direction === 'up') {
+      await tasksApi.reorder(task.id, targetTask.status, targetTask.id);
+    } else {
+      const laneTasks = tasksByStatus(targetTask.status);
+      const laneTargetIdx = laneTasks.findIndex((t) => t.id === targetTask.id);
+      const nextTask = laneTasks[laneTargetIdx + 1];
+      await tasksApi.reorder(task.id, targetTask.status, nextTask?.id);
+    }
     loadTasks();
   };
 
@@ -319,6 +342,7 @@ export default function DashboardPage() {
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
               <option value="priority">Priority</option>
+              <option value="custom">⇳ Custom Order</option>
             </select>
           </div>
 
@@ -658,6 +682,11 @@ export default function DashboardPage() {
                             draggable
                             onDragStart={() => setDraggingId(task.id)}
                             onClick={() => startEdit(task)}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.stopPropagation();
+                              if (draggingId !== null) handleDrop(draggingId, lane.key, task.id);
+                            }}
                             className={`bg-[#151921] hover:bg-[#1C212B] border-l-[3px] ${theme.border} rounded-lg p-3 cursor-pointer hover:border-gray-700 transition group ${
                               draggingId === task.id ? 'opacity-50' : ''
                             }`}
@@ -720,7 +749,31 @@ export default function DashboardPage() {
                               </div>
 
                               {/* Actions */}
-                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                                {sortBy === 'custom' && (
+                                  <div className="flex flex-col text-[10px] text-[#5B6F6B] mr-1">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMoveTask(task, 'up');
+                                      }}
+                                      disabled={tasks.findIndex((t) => t.id === task.id) === 0}
+                                      className="hover:text-white disabled:opacity-30 px-1 py-0.5"
+                                    >
+                                      ▲
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMoveTask(task, 'down');
+                                      }}
+                                      disabled={tasks.findIndex((t) => t.id === task.id) === tasks.length - 1}
+                                      className="hover:text-white disabled:opacity-30 px-1 py-0.5"
+                                    >
+                                      ▼
+                                    </button>
+                                  </div>
+                                )}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -778,15 +831,43 @@ export default function DashboardPage() {
                           className={`hover:bg-[#1C212B] cursor-pointer group transition border-l-[3px] ${theme.border}`}
                         >
                           <td className="px-6 py-4">
-                            <button
-                              type="button"
-                              onClick={(e) => toggleTaskStatus(e, task)}
-                              className={`text-base shrink-0 transition focus:outline-none ${
-                                task.status === 'done' ? 'text-[#0E685E]' : 'text-[#5B6F6B] hover:text-[#E8EDEB]'
-                              }`}
-                            >
-                              {task.status === 'done' ? '✓' : '○'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {sortBy === 'custom' && (
+                                <div className="flex flex-col text-[9px] text-[#5B6F6B] leading-none shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoveTask(task, 'up');
+                                    }}
+                                    disabled={filteredTasks.findIndex((t) => t.id === task.id) === 0}
+                                    className="hover:text-white disabled:opacity-20 py-0.5"
+                                  >
+                                    ▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMoveTask(task, 'down');
+                                    }}
+                                    disabled={filteredTasks.findIndex((t) => t.id === task.id) === filteredTasks.length - 1}
+                                    className="hover:text-white disabled:opacity-20 py-0.5"
+                                  >
+                                    ▼
+                                  </button>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => toggleTaskStatus(e, task)}
+                                className={`text-base shrink-0 transition focus:outline-none ${
+                                  task.status === 'done' ? 'text-[#0E685E]' : 'text-[#5B6F6B] hover:text-[#E8EDEB]'
+                                }`}
+                              >
+                                {task.status === 'done' ? '✓' : '○'}
+                              </button>
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className={`font-medium transition ${

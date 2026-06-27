@@ -24,7 +24,7 @@ taskRoutes.get("/", async (c) => {
     .select()
     .from(tasks)
     .where(and(...filters))
-    .orderBy(desc(tasks.createdAt));
+    .orderBy(tasks.position, desc(tasks.createdAt));
 
   return c.json({ tasks: result });
 });
@@ -65,6 +65,13 @@ taskRoutes.post("/", async (c) => {
     if (!cat) return c.json({ error: "Category not found" }, 404);
   }
 
+  // Fetch existing tasks in this status to compute the position
+  const existingTasks = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.userId, userId), eq(tasks.status, data.status || "todo")));
+  const position = existingTasks.length;
+
   const [task] = await db
     .insert(tasks)
     .values({
@@ -72,6 +79,7 @@ taskRoutes.post("/", async (c) => {
       startDate: data.startDate ? new Date(data.startDate) : null,
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
       userId,
+      position,
     })
     .returning();
 
@@ -189,6 +197,56 @@ taskRoutes.delete("/:id", async (c) => {
   if (!existing) return c.json({ error: "Task not found" }, 404);
 
   await db.delete(tasks).where(eq(tasks.id, id));
+  return c.json({ success: true });
+});
+
+taskRoutes.post("/reorder", async (c) => {
+  const { userId } = c.get("user");
+  const { taskId, status, targetTaskId } = await c.req.json();
+
+  if (!taskId || !status) {
+    return c.json({ error: "taskId and status are required" }, 400);
+  }
+
+  // Verify task ownership
+  const [task] = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+    .limit(1);
+  if (!task) return c.json({ error: "Task not found" }, 404);
+
+  // Fetch all tasks in the target status for this user, ordered by position
+  const statusTasks = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.userId, userId), eq(tasks.status, status)))
+    .orderBy(tasks.position, tasks.id);
+
+  // Remove the dragged task if it was already in this status
+  const otherTasks = statusTasks.filter((t) => t.id !== taskId);
+
+  if (targetTaskId) {
+    const targetIdx = otherTasks.findIndex((t) => t.id === targetTaskId);
+    if (targetIdx !== -1) {
+      // Place it at the target task's index (shifting others down)
+      otherTasks.splice(targetIdx, 0, task);
+    } else {
+      otherTasks.push(task);
+    }
+  } else {
+    // Append to the end
+    otherTasks.push(task);
+  }
+
+  // Update positions in the database
+  for (let i = 0; i < otherTasks.length; i++) {
+    await db
+      .update(tasks)
+      .set({ position: i, status: otherTasks[i].id === taskId ? status : otherTasks[i].status })
+      .where(and(eq(tasks.id, otherTasks[i].id), eq(tasks.userId, userId)));
+  }
+
   return c.json({ success: true });
 });
 
